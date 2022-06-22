@@ -12,6 +12,7 @@ import 'package:japea/widgets/show_button.dart';
 import 'package:japea/widgets/show_form.dart';
 import 'package:japea/widgets/show_image.dart';
 import 'package:japea/widgets/show_text.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 //2. override
 // statelessW
@@ -161,13 +162,23 @@ class _AuthenState extends State<Authen> {
 
           if (password == userModel.password) {
             MyDialog(context: context).normalDialog(
-              pressFunc: () {
-                Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const Myservice(),
-                    ),
-                    (route) => false);
+              pressFunc: () async {
+                SharedPreferences preferences =
+                    await SharedPreferences.getInstance();
+
+                var data = <String>[];
+                data.add(userModel.id);
+                data.add(userModel.name);
+                data.add(userModel.position);
+
+                preferences.setStringList('data', data).then((value) {
+                  Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const Myservice(),
+                      ),
+                      (route) => false);
+                });
               },
               label: 'Go to Service',
               title: 'Welcome to app',
