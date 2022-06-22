@@ -1,7 +1,14 @@
 // 1. import
 // importM (Material template for create app page)
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:japea/models/user_model.dart';
+import 'package:japea/states/my_service.dart';
 import 'package:japea/utility/my_constant.dart';
+import 'package:japea/utility/my_dialog.dart';
+import 'package:japea/widgets/show_button.dart';
 import 'package:japea/widgets/show_form.dart';
 import 'package:japea/widgets/show_image.dart';
 import 'package:japea/widgets/show_text.dart';
@@ -18,6 +25,7 @@ class Authen extends StatefulWidget {
 
 class _AuthenState extends State<Authen> {
   bool redEye = true;
+  String? user, password;
 
   @override
   Widget build(BuildContext context) {
@@ -29,20 +37,45 @@ class _AuthenState extends State<Authen> {
           onTap: () {
             FocusScope.of(context).requestFocus(FocusScopeNode());
           },
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                newLogo(boxConstraints),
-                newTitle(),
-                formUser(boxConstraints),
-                formPassword(boxConstraints),
-              ],
+          child: Container(
+            decoration: MyConstant().bgBox(),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  newLogo(boxConstraints),
+                  newTitle(boxConstraints),
+                  formUser(boxConstraints),
+                  formPassword(boxConstraints),
+                  buttonLogin(boxConstraints),
+                ],
+              ),
             ),
           ),
         );
       }),
     ); //3.container > Scaffold
+  }
+
+  Container buttonLogin(BoxConstraints boxConstraints) {
+    return Container(
+        margin: const EdgeInsets.only(top: 16),
+        width: boxConstraints.maxWidth * 0.4,
+        child: ShowButton(
+          label: 'LOGIN',
+          pressFunc: () {
+            print('user = $user, password = $password');
+
+            if ((user?.isEmpty ?? true) || (password?.isEmpty ?? true)) {
+              print('Have Space');
+              MyDialog(context: context).normalDialog(
+                  title: 'Have Space ?', subTitle: 'Please Fill Every Blank');
+            } else {
+              print('No Space');
+              processCheckLogin();
+            }
+          },
+        ));
   }
 
   Container formPassword(BoxConstraints boxConstraints) {
@@ -59,7 +92,9 @@ class _AuthenState extends State<Authen> {
         obSecu: redEye,
         hint: 'Password',
         iconData: Icons.lock_outline,
-        changeFung: (String string) {},
+        changeFung: (String string) {
+          password = string.trim();
+        },
       ),
     );
   }
@@ -72,19 +107,78 @@ class _AuthenState extends State<Authen> {
       child: ShowForm(
         hint: 'User: ',
         iconData: Icons.account_circle,
-        changeFung: (String string) {},
+        changeFung: (String string) {
+          user = string.trim();
+        },
       ),
     );
   }
 
-  ShowText newTitle() {
-    return ShowText(
-      text: 'Login : ',
-      textStyle: MyConstant().h1Style(),
+  SizedBox newTitle(BoxConstraints boxConstraints) {
+    return SizedBox(
+      width: boxConstraints.maxWidth * 0.6,
+      child: Row(
+        children: [
+          ShowText(
+            text: 'Login : ',
+            textStyle: MyConstant().h1Style(),
+          ),
+        ],
+      ),
     );
   }
 
   SizedBox newLogo(BoxConstraints boxConstraints) {
-    return SizedBox(width: boxConstraints.maxWidth * 0.25, child: ShowImage());
+    return SizedBox(
+      width: boxConstraints.maxWidth * 0.6,
+      child: Row(
+        children: [
+          SizedBox(
+            width: boxConstraints.maxWidth * 0.25,
+            child: ShowImage(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> processCheckLogin() async {
+    String path =
+        'https://www.androidthai.in.th/egat/getUserWhereUserJa.php?isAdd=true&user=$user';
+
+    await Dio().get(path).then((value) {
+      print('value ==> $value');
+
+      if (value.toString() == 'null') {
+        MyDialog(context: context).normalDialog(
+            title: 'User False', subTitle: 'No $user in my Database');
+      } else {
+        var result = json.decode(value.data);
+        print('result ==> $result');
+
+        for (var element in result) {
+          UserModel userModel = UserModel.fromMap(element);
+
+          if (password == userModel.password) {
+            MyDialog(context: context).normalDialog(
+              pressFunc: () {
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const Myservice(),
+                    ),
+                    (route) => false);
+              },
+              label: 'Go to Service',
+              title: 'Welcome to app',
+              subTitle: 'Login Success, Welcome ${userModel.name}',
+            );
+          } else {
+            MyDialog(context: context).normalDialog(
+                title: 'Password False', subTitle: 'Please Try Again');
+          }
+        }
+      }
+    });
   }
 }
