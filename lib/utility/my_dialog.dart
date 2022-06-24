@@ -16,6 +16,8 @@ class MyDialog {
     required String subTitle,
     String? label,
     Function()? pressFunc,
+    String? label2,
+    Function()? pressFunc2,
   }) async {
     showDialog(
       context: context,
@@ -39,6 +41,9 @@ class MyDialog {
                     Navigator.pop(context);
                   })
               : ShowTextButton(label: label!, pressFunc: pressFunc),
+          pressFunc2 == null
+              ? const SizedBox()
+              : ShowTextButton(label: label2!, pressFunc: pressFunc2),
         ],
       ),
     );
